@@ -19,10 +19,12 @@ The code is divided into three folders, meant to run on three different computer
 2. Test your code before committing, and put the scripts for testing in the test folder for the system you're testing. The script should include what it's testing. 
 3. If you make large-scale changes to the organization, please consult at least one of the designers: Michael, Jay or Christopher before doing so, so we can explain why we did it the way we did
 
-## Using git
+## Using git from command line
 On Windows: [Download the git shell] (https://desktop.github.com)
 
 On Linux: It should be included by default
+
+Navigate to where the repo is stored (e.g. cd C:/Users/user/Documents/galaxy2)
 
 To set up the repository on your computer: 
 ```
@@ -36,3 +38,7 @@ $ git commit -m "Look, I can commit my code!"
 $ git push
 ```
 
+To pull changes (update the version on your computer to the latest):
+```
+$ git pull
+```
