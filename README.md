@@ -26,16 +26,19 @@ On Linux: It should be included by default
 
 Navigate to where the repo is stored (e.g. cd C:/Users/user/Documents/galaxy2)
 
-To set up the repository on your computer: ```
+To set up the repository on your computer: 
+```
 $ git clone https://github.com/rsx-utoronto/galaxy2.git
 ```
 
-To commit changes (after testing!): ```
+To commit changes (after testing!):
+```
 $ git add *
 $ git commit -m "Look, I can commit my code!"
 $ git push
 ```
 
-To pull changes (update the version on your computer to the latest): ```
+To pull changes (update the version on your computer to the latest):
+```
 $ git pull
 ```
