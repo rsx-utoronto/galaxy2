@@ -30,8 +30,17 @@ def read(address):
     Read a byte from the i2c connection
     Argument:
         address (int): i2c address of the receiving device
-    '''
+    '''	
     return bus.read_byte(address)
+    
+def read_block(address):
+    ''' 
+    Read a whatever block of data was sent across the i2c connection.
+    Will always return a 32-byte array with 255 in the unused positions. 
+    Argument: 
+        address (int): i2c address of the receiving device 
+    '''
+    return bus.read_i2c_block_data(address, 0)
     
 while(True):
     for event in pygame.event.get(): # User did something
@@ -44,6 +53,6 @@ while(True):
         write(ARM_ADDRESS, '1') 
 
     # get sensor data
-    sensors = [read(SENSOR_ADDRESS) for i in range(5)] 
+    sensors = read_block(SENSOR_ADDRESS)
     print(sensors) 
-    time.sleep(0.25) # poll every 0.25 seconds    
+    time.sleep(0.25) # poll every 0.25 seconds
