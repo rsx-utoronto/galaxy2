@@ -7,10 +7,8 @@ The code is divided into three folders, meant to run on three different computer
 
 - The **ground** folder contains files meant to run on the ground station computer. The main script is main.py, which will call other files as necessary. 
 - The **obc** folder contains the files meant to run on the onboard computer, i.e. the Raspberry Pi, the master computer on the rover. There will be one script, main.py, running on this computer.
-- The **controller** folder contains the files meant to run on the microcontroller, i.e. the Arduino, that interfaces directly with the sensors. There will be one script, controller.ino, running on this computer. 
+- The **controller** folder contains the files meant to run on each microcontroller, i.e. the Arduino. One script runs on each arduino.
 
-- The **ground_comm** folders in ground/ and obc/ handle socket communications between the ground station and the onboard computer. 
-- The **control_comm** folders in obc/ and controller/ handle serial communications on the rover between the onboard computer and the microcontroller.
 - Each folder should have a test folder for scripts that test the code. 
 
 
@@ -21,9 +19,7 @@ The code is divided into three folders, meant to run on three different computer
 
 ## Using git from command line
 On Windows: [Download the git shell] (https://desktop.github.com)
-
 On Linux: It should be included by default
-
 Navigate to where the repo is stored (e.g. cd C:/Users/user/Documents/galaxy2)
 
 To set up the repository on your computer: 

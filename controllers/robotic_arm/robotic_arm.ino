@@ -4,7 +4,7 @@
 #define JOINT_CW 1    // directions for the arm joint 
 #define JOINT_CCW 2
 
-#define MOTOR_ADDRESS 0x10
+#define ARM_ADDRESS 0x10
 
 #include <Wire.h> 
 
@@ -13,10 +13,11 @@ int motor1pin2 = 3;
 int state = JOINT_STOP;
 
 void setup() {
-  Wire.begin(MOTOR_ADDRESS); 
+  Wire.begin(ARM_ADDRESS); 
   Wire.onReceive(receiveData); 
   pinMode(motor1pin1, OUTPUT); 
   pinMode(motor1pin2, OUTPUT); 
+  Serial.begin(9600); 
 }
 
 // listener for receiving data. 
@@ -25,6 +26,7 @@ void receiveData(int byteCount)
   for(int i=0; i<byteCount; i++)
   {
     int incomingByte = Wire.read(); 
+    Serial.println(incomingByte); 
 
     switch (incomingByte)
     {
