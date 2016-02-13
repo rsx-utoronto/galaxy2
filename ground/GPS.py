@@ -74,7 +74,7 @@ class GPSWorker(QObject):
 		initialLong = -7927.9650
 	
 		#Moves the rover continuously upwards
-		latitude = initialLat + self.cnt * 0.1
+		latitude = initialLat + self.cnt * 0
 		longitude = initialLong
 
 		latitude = self.convertDD(latitude)
@@ -181,7 +181,7 @@ class Window(QWidget):
 		self.setLayout(layout)
 	 
 		# load the OpenStreetMap map
-		self.marble.setMapThemeId("earth/openstreetmap/openstreetmap.dgml")
+		self.marble.setMapThemeId("earth/google-maps-satellite/google-maps-satellite.dgml")
 		self.marble.setProjection(Marble.Mercator)
 		# center the map on Kiev
 		self.marble.centerOn(center);
