@@ -1,0 +1,29 @@
+config info:
+
+Arduinos: 
+	robot arm: 
+		pin 2, 3: some joint
+		run robotic_arm.ino
+
+	sensors: (should be mega)
+		pin A5: moisture sensor 
+		pin A0: gas sensor 1
+		pin A1: " 2
+		pin A2: " 3 
+		pin A3: voltage sensor 
+
+		run sensors.ino 
+
+	drive: (should be mega)
+		pins 8, 9: to motor driver
+
+Pi: 
+	connect a raspberry pi to the two arduinos via i2c. 
+	Run main.py on this raspberry 
+	connect a joystick to the pi 
+    
+    
+I2C:
+    Arm: 0x10
+    Sensor: 0x11
+    Drive: 0x12
