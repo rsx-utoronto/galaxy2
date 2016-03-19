@@ -24,14 +24,12 @@ while(True):
         pass   # ignore events.
     
     if (joystick_controls_arm): # send joystick commands to the arm 
-        if(abs(j.get_axis(1)) < 0.1): 
-            pass 
-            '''
+        if(abs(j.get_axis(1)) < 0.1):
             pser.write((ARM_ADDRESS, '0', '\x00', '\x00')) # don't let drift affect the arm
         elif(j.get_axis(1) > 0):
             pser.write((ARM_ADDRESS, '2', '\x00', '\x00'))
         else:
-            pser.write((ARM_ADDRESS, '1', '\x00', '\x00')) ''' 
+            pser.write((ARM_ADDRESS, '1', '\x00', '\x00'))
     else:  # joystick controls drive system
         vertical_axis=j.get_axis(1)#vertical_axis input
         horizontal_axis=j.get_axis(0)# horizontal_axis input
@@ -55,7 +53,7 @@ while(True):
             forward_backward=93 #rest values- no motion
         if(horizontal_axis==0):
             left_right=93 #rest values- no motion
-        # pser.write((DRIVE_ADDRESS, chr(left_right), chr(forward_backward), '\x00'))
+        pser.write((DRIVE_ADDRESS, chr(left_right), chr(forward_backward), '\x00'))
         
     # Switch between arm and drive system 
     if j.get_button(9):
