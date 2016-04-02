@@ -3,6 +3,7 @@ import pygame
 import serial
 import time 
 from PacketSerial import *
+import sys, os
 
 pygame.init()
 j = pygame.joystick.Joystick(0)
@@ -11,6 +12,7 @@ pygame.joystick.init()
 
 ser = serial.Serial("/dev/ttyUSB0", 9600, timeout=1)
 pser = PacketSerial(ser)
+starttime = time.time() 
 
 # Define some constants
 ARM_ADDRESS = chr(0x10)  # since pyserial likes to get them as strings. 
@@ -25,13 +27,11 @@ while(True):
     
     if (joystick_controls_arm): # send joystick commands to the arm 
         if(abs(j.get_axis(1)) < 0.1): 
-            pass 
-            '''
             pser.write((ARM_ADDRESS, '0', '\x00', '\x00')) # don't let drift affect the arm
         elif(j.get_axis(1) > 0):
             pser.write((ARM_ADDRESS, '2', '\x00', '\x00'))
         else:
-            pser.write((ARM_ADDRESS, '1', '\x00', '\x00')) ''' 
+            pser.write((ARM_ADDRESS, '1', '\x00', '\x00')) 
     else:  # joystick controls drive system
         vertical_axis=j.get_axis(1)#vertical_axis input
         horizontal_axis=j.get_axis(0)# horizontal_axis input
@@ -55,7 +55,7 @@ while(True):
             forward_backward=93 #rest values- no motion
         if(horizontal_axis==0):
             left_right=93 #rest values- no motion
-        # pser.write((DRIVE_ADDRESS, chr(left_right), chr(forward_backward), '\x00'))
+        pser.write((DRIVE_ADDRESS, chr(left_right), chr(forward_backward), '\x07'))
         
     # Switch between arm and drive system 
     if j.get_button(9):
@@ -67,4 +67,8 @@ while(True):
     data2 = pser.read()
     print("Sensor data: ", data, data2)
 
-    time.sleep(0.25)
+    #time.sleep(0.1)
+    if time.time() - starttime > 5:
+        ser.flushInput() 
+        ser.flushOutput()
+        starttime = time.time()
