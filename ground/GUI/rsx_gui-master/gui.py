@@ -19,6 +19,11 @@ from PyQt4.QtGui import *
 from PyKDE4.marble import *
 from math import *
 
+import pygame 
+import serial
+import time 
+from PacketSerial import *
+
 
 class local_graphs:
 
@@ -69,121 +74,6 @@ class dynamic_graph_canvas(mpl_canvas):
         self.axes.plot(range(self.graph_x_data.max_len),\
             self.graph_x_data.update(), self.line_colour)
         self.draw()
-
-
-class rover_map(QtGui.QLabel):
-
-    def __init__(self, filename, top_left_coord, bottom_right_coord):
-        QtGui.QLabel.__init__(self)
-        self.pixmap = QtGui.QPixmap(filename)
-        self.marker = QtGui.QPixmap('triangle.png')
-        self.setPixmap(self.pixmap)
-        self.top_left_coord = top_left_coord
-        self.bottom_right_coord = bottom_right_coord
-        self.scale_factor = 1.0
-        timer = QtCore.QTimer(self)
-        timer.timeout.connect(self.update)
-        timer.start(1000)
-
-    def paintEvent(self, event):
-        rect = QtCore.QRect(QtCore.QPoint(0,0), self.size())
-        qp = QtGui.QPainter()
-        qp.begin(self)
-        qp.drawPixmap(rect, self.pixmap)
-        self.draw_rover_position(event, qp)
-        qp.end()
-        
-    def draw_rover_position(self, event, qp):
-        point = (self.get_plot_coords()[0], self.get_plot_coords()[1])
-        size = (12*self.scale_factor, 20*self.scale_factor)
-        # qp.setPen(QtCore.Qt.green)
-        # qp.drawEllipse(self.get_plot_coords()[0] - 5,\
-        #     self.get_plot_coords()[1] - 5, 10, 10)
-        # qp.drawPoint(self.get_plot_coords()[0], self.get_plot_coords()[1])
-        qp.translate(point[0], point[1])
-        qp.rotate(sensor_simulator.compass_sensor())
-        qp.drawPixmap(-size[0]/2, -size[1]/2, size[0], size[1], self.marker)
-
-    def get_plot_coords(self):
-        pos = sensor_simulator.gps_sensor()
-        size = self.size()
-
-        h = abs(self.top_left_coord[0] - self.bottom_right_coord[0])
-        w = abs(self.top_left_coord[1] - self.bottom_right_coord[1])
-
-        h_per = (abs(self.top_left_coord[0] - pos[0])/h)
-        w_per = (abs(self.top_left_coord[1] - pos[1])/w)
-
-        y = int(h_per*size.height())
-        x = int(w_per*size.width())
-
-        return x, y
-
-    def set_scale_factor(self, factor):
-        self.scale_factor = factor
-
-
-class image_viewer(QtGui.QScrollArea):
-
-    def __init__(self, image_label):
-        QtGui.QScrollArea.__init__(self)
-        self.image_label = image_label
-        self.image_label.setSizePolicy(QtGui.QSizePolicy.Ignored,\
-            QtGui.QSizePolicy.Ignored)
-        self.image_label.setScaledContents(True)
-        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.setWidget(self.image_label)
-
-        self.last_x = 0
-        self.last_y = 0
-
-        self.scale_factor = 1.0
-
-    def mouseMoveEvent(self, event):
-        if abs(self.last_x - event.x()) > 100 or abs(self.last_y - event.y()) > 100:
-            pass
-        else:
-            self.horizontalScrollBar().setValue(self.horizontalScrollBar().\
-                sliderPosition() + (self.last_x - event.x()))
-            self.verticalScrollBar().setValue(self.verticalScrollBar().\
-                sliderPosition() + (self.last_y - event.y()))
-
-        self.last_x, self.last_y = event.x(), event.y()
-
-    def wheelEvent(self, event):
-        print(event.delta())
-        self.scale_image(1 + event.delta()*0.001)
-
-    def normal_size(self):
-        self.image_label.adjustSize()
-        self.scale_factor = 1.0
-
-    def scale_image(self, factor):
-        if self.scale_factor < 3.0 and self.scale_factor > 0.666:
-            self.scale_factor *= factor
-            self.image_label.resize(self.scale_factor * self.image_label.pixmap.size())
-            self.image_label.set_scale_factor(self.scale_factor)
-
-            self.adjust_scroll_bar(self.horizontalScrollBar(), factor)
-            self.adjust_scroll_bar(self.verticalScrollBar(), factor)
-        elif self.scale_factor > 3.0 and factor <= 1:
-            self.scale_factor *= factor
-            self.image_label.resize(self.scale_factor * self.image_label.pixmap.size())
-
-            self.adjust_scroll_bar(self.horizontalScrollBar(), factor)
-            self.adjust_scroll_bar(self.verticalScrollBar(), factor)
-        elif self.scale_factor < 0.666 and factor >= 1:
-            self.scale_factor *= factor
-            self.image_label.resize(self.scale_factor * self.image_label.pixmap.size())
-
-            self.adjust_scroll_bar(self.horizontalScrollBar(), factor)
-            self.adjust_scroll_bar(self.verticalScrollBar(), factor)
-
-    def adjust_scroll_bar(self, scroll_bar, factor):
-        scroll_bar.setValue(int(factor * scroll_bar.value()
-                                + ((factor - 1) * scroll_bar.pageStep()/2)))
-
 
 class rover_topview(QtGui.QLabel):
 
@@ -247,7 +137,7 @@ class GPSWorker(QObject):
 		#change self.pseudoiterate to self.iterate when GPS is connected
 		self.connect(self.timer, SIGNAL('timeout()'), self.pseudoiterate) #pseudoiterate is used as a test when the GPS is not connected
 		self.timer.start()
-	 
+
 	def iterate(self):
 		# update the loaction of the current worker
 		while True:
@@ -328,8 +218,8 @@ class CompassWorker(QObject):
 		angle1 = heading
 		angle2 = 3.14 + heading - 0.64
 		angle3 = 3.14 + heading + 0.64
-		print "Angles"
-		print (angle1, angle2, angle3)
+#		print "Angles"
+#		print (angle1, angle2, angle3)
 
 		#Compute the offset of the three points from the current location point
 
@@ -349,20 +239,20 @@ class CompassWorker(QObject):
 		p1LONG = px + l1x
 		p1LAT = py + l1y
 		p1 = Marble.GeoDataCoordinates(p1LONG, p1LAT, 0.0, Marble.GeoDataCoordinates.Degree)
-		print "Point 1"
-		print (p1LONG, p1LAT)
+#		print "Point 1"
+#		print (p1LONG, p1LAT)
 
 		p2LONG = px + l2x
 		p2LAT = py + l2y
 		p2 = Marble.GeoDataCoordinates(p2LONG, p2LAT, 0.0, Marble.GeoDataCoordinates.Degree)
-		print "Point 2"
-		print (p2LONG, p2LAT)
+#		print "Point 2"
+#		print (p2LONG, p2LAT)
 		
 		p3LONG = px + l3x
 		p3LAT = py + l3y
 		p3 = Marble.GeoDataCoordinates(p3LONG, p3LAT, 0.0, Marble.GeoDataCoordinates.Degree)
-		print "Point 3"
-		print (p3LONG, p3LAT)
+#		print "Point 3"
+#		print (p3LONG, p3LAT)
 
 		return (p1,p2,p3)
 			
@@ -464,6 +354,93 @@ class Window(QWidget):
 		self.H3.setCoordinate(points[2])
 		self.marble.model().treeModel().updateFeature(self.H3)
 
+
+class joystick(QObject):
+    #ARM_ADDRESS = chr(0x10)  # joystick.ARM_ADDRESS
+    def __init__(self):
+        QObject.__init__(self)
+        pygame.init()
+        self.j = pygame.joystick.Joystick(0)
+        self.j.init()
+        pygame.joystick.init()
+
+        self.ser = serial.Serial("/dev/ttyUSB0", 9600, timeout=1)
+        self.pser = PacketSerial(self.ser)
+        self.starttime = time.time()
+        self.update_rate = 10
+        self.timer = QTimer(self)
+
+        # Define some constants
+        self.ARM_ADDRESS = chr(0x10)  # since pyserial likes to get them as strings. 
+        self.SENSOR_ADDRESS = chr(0x11)
+        self.DRIVE_ADDRESS = chr(0x12)
+
+        self.joystick_controls_arm = False
+
+    def start_joystick(self):
+		self.timer.setInterval(0)
+		self.connect(self.timer, SIGNAL('timeout()'), self.main)
+		self.timer.start()
+
+    def end_joystick(self):
+        self.timer.stop()
+
+    def main(self):
+        for event in pygame.event.get(): # User did something
+            pass   # ignore events.
+        
+        if (self.joystick_controls_arm): # send joystick commands to the arm 
+            if(abs(self.j.get_axis(1)) < 0.1): 
+                self.pser.write((self.ARM_ADDRESS, '0', '\x00', '\x00')) # don't let drift affect the arm
+            elif(self.j.get_axis(1) > 0):
+                self.pser.write((self.ARM_ADDRESS, '2', '\x00', '\x00'))
+            else:
+                self.pser.write((self.ARM_ADDRESS, '1', '\x00', '\x00')) 
+        else:  # joystick controls drive system
+            '''vertical_axis = self.j.get_axis(1)#vertical_axis input
+            horizontal_axis = self.j.get_axis(0)# horizontal_axis input
+            lever = -(self.j.get_axis(2)-1)/2 #the shiftable joystick in the bottom "+" and "-" to control the speed, scaled to the desired high to low position
+
+            if(vertical_axis*100<0):#when the vertical axis is pushed up
+                forward_backward=93+vertical_axis*63*lever
+                forward_backward=int(forward_backward)
+            elif(vertical_axis*100>0):#when the vertical axis is pushed down
+                forward_backward=93+vertical_axis*57*lever
+                forward_backward=int(forward_backward)
+               
+            if(horizontal_axis*100<0):#when pushed left
+                left_right=93+horizontal_axis*63*lever
+                left_right=int(left_right)        
+            elif(horizontal_axis*100>0):#when pushed right
+                left_right=93+horizontal_axis*67*lever
+                left_right=int(left_right)
+               
+            if(vertical_axis==0):
+                forward_backward=93 #rest values- no motion
+            if(horizontal_axis==0):
+                left_right=93 #rest values- no motion '''
+            forward_backward = int(self.j.get_axis(1) * 100 + 100)
+            left_right = int(self.j.get_axis(2) * 100 + 100)
+            self.pser.write((self.DRIVE_ADDRESS, chr(left_right), chr(forward_backward), '\x07'))
+            self.pser.write((self.DRIVE_ADDRESS, chr(left_right), chr(forward_backward), '\x07'))
+            
+        # Switch between arm and drive system 
+        if self.j.get_button(9):
+            self.joystick_controls_arm = not self.joystick_controls_arm
+            print("Switched joystick control of arm/ drive")
+            # TODO: Stop all motion when switching between systems
+
+        #data = self.pser.read()
+        #data2 = self.pser.read()
+        #print("Sensor data: ", data, data2)
+
+        #time.sleep(0.1)
+        if time.time() - self.starttime > 5:
+            self.ser.flushInput() 
+            self.ser.flushOutput()
+            self.starttime = time.time()
+
+
 class application_window(QtGui.QMainWindow):
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
@@ -496,13 +473,20 @@ class application_window(QtGui.QMainWindow):
             parent=self.graph_widget, width=5, height=4, dpi=100)
 
         # Make map widget
-        m = rover_map('map.png', (38.408270, -110.796829),\
-            (38.404115, -110.785533))
-        gps_map = image_viewer(m)
+
 
         UTIAS = Marble.GeoDataCoordinates(-79.466083, 43.782247, 0, Marble.GeoDataCoordinates.Degree)
         gps_map = Window(UTIAS,'UTIASTest.osm','/dev/ttyUSB0','/dev/ttyUSB1')
-    	gps_map.startRover()
+        
+        # Start joystick
+        self.joystick_thread = QThread()
+        self.j = joystick()
+        self.j.moveToThread(self.joystick_thread)
+
+        self.connect(self.joystick_thread, SIGNAL("started()"), self.j.start_joystick)
+        self.connect(self.joystick_thread, SIGNAL("finished()"), self.j.end_joystick)
+
+        self.joystick_thread.start()
 
         # Coloured wheels widget
         rov = rover_topview()
