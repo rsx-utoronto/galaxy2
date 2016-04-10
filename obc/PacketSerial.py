@@ -26,7 +26,6 @@ class PacketSerial():
 			for i in self.d:
 				checksum ^= ord(i) ''' 
 			if checksum == byte:
-                                print(list(self.d), checksum)
 				return list(self.d)
 			else: 
 				self.d.append(byte)
