@@ -28,15 +28,6 @@ from PacketSerial import *
 import Joystick
 
 
-class sensor_graphs:
-
-    def __init__(self):
-        self.gas_sensor = graphs.scrolling_graph(200,\
-            sensor_simulator.gas_sensor)
-        self.moisture_sensor = graphs.scrolling_graph(200,\
-            sensor_simulator.moisture_sensor)
-
-
 class rover_topview(QtGui.QLabel):
 
     def __init__(self):
@@ -412,7 +403,6 @@ if __name__ == "__main__":
     qApp = QtGui.QApplication(sys.argv)
     qApp.setWindowIcon(QtGui.QIcon('icon.png'))
 
-    sensor_graphs = sensor_graphs()
     aw = application_window()
     sys.exit(qApp.exec_())
     #qApp.exec_()
