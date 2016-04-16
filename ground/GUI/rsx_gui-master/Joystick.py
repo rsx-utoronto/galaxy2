@@ -1,6 +1,16 @@
+import pygame 
+import serial
+import time 
+from PacketSerial import *
+import sys, os
+
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
+
+
 class Joystick(QObject):
 
-''' all of chris' joystick code '''
+    ''' all of chris' joystick code '''
 
     ARM_ADDRESS = chr(0x10)  # since pyserial likes to get them as strings.
     SENSOR_ADDRESS = chr(0x11)
@@ -35,11 +45,11 @@ class Joystick(QObject):
         
         if (self.joystick_controls_arm): # send joystick commands to the arm 
             if(abs(self.j.get_axis(1)) < 0.1): 
-                self.pser.write((self.ARM_ADDRESS, '0', '\x00', '\x00')) # don't let drift affect the arm
+                self.pser.write((Joystick.ARM_ADDRESS, '0', '\x00', '\x00')) # don't let drift affect the arm
             elif(self.j.get_axis(1) > 0):
-                self.pser.write((self.ARM_ADDRESS, '2', '\x00', '\x00'))
+                self.pser.write((Joystick.ARM_ADDRESS, '2', '\x00', '\x00'))
             else:
-                self.pser.write((self.ARM_ADDRESS, '1', '\x00', '\x00')) 
+                self.pser.write((Joystick.ARM_ADDRESS, '1', '\x00', '\x00')) 
         else:  # joystick controls drive system
             '''vertical_axis = self.j.get_axis(1)#vertical_axis input
             horizontal_axis = self.j.get_axis(0)# horizontal_axis input
@@ -65,8 +75,8 @@ class Joystick(QObject):
                 left_right=93 #rest values- no motion '''
             forward_backward = int(self.j.get_axis(1) * 100 + 100)
             left_right = int(self.j.get_axis(2) * 100 + 100)
-            self.pser.write((self.DRIVE_ADDRESS, chr(left_right), chr(forward_backward), '\x07'))
-            self.pser.write((self.DRIVE_ADDRESS, chr(left_right), chr(forward_backward), '\x07'))
+            self.pser.write((Joystick.DRIVE_ADDRESS, chr(left_right), chr(forward_backward), '\x07'))
+            self.pser.write((Joystick.DRIVE_ADDRESS, chr(left_right), chr(forward_backward), '\x07'))
             
         # Switch between arm and drive system 
         if self.j.get_button(9):

@@ -19,9 +19,10 @@ import sensor_simulator
 
 class scrolling_graph:
 
-''' controls the buffer and updating of the scrolling
+    ''' controls the buffer and updating of the scrolling
     sensor graphs
-    needs to import deque '''
+    needs to import deque
+    '''
 
     def __init__(self, max_len, data_fn):
         # initializes buffer with max length, initializes data source
@@ -85,8 +86,8 @@ class dynamic_graph_canvas(mpl_canvas):
     # dictionary for easy access by name
     gas_sensor = scrolling_graph(200, sensor_simulator.gas_sensor)
     moisture_sensor = scrolling_graph(200, sensor_simulator.moisture_sensor)
-    graphs_of_sensors = {'Gas Sensor':dynamic_graph_canvas.gas_sensor,\
-    'Moisture Sensor':dynamic_graph_canvas.moisture_sensor}
+    graphs_of_sensors = {'Gas Sensor':gas_sensor,\
+    'Moisture Sensor':moisture_sensor}
 
     def __init__(self, graph_x_data, line_colour='b', **kwargs):
         # initializes mpl canvas with attributes update rate,

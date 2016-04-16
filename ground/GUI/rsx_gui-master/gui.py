@@ -10,8 +10,10 @@ else:
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from collections import OrderedDict
+
 import graphs
 import sensor_simulator
+
 import random
 import serial
 from PyQt4.QtCore import *
@@ -23,6 +25,7 @@ import pygame
 import serial
 import time 
 from PacketSerial import *
+import Joystick
 
 
 class sensor_graphs:
@@ -314,9 +317,6 @@ class Window(QWidget):
 		self.marble.model().treeModel().updateFeature(self.H3)
 
 
-
-
-
 class application_window(QtGui.QMainWindow):
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
@@ -354,7 +354,7 @@ class application_window(QtGui.QMainWindow):
         
         # Start joystick
         self.joystick_thread = QThread()
-        self.j = joystick()
+        self.j = Joystick.Joystick()
         self.j.moveToThread(self.joystick_thread)
 
         self.connect(self.joystick_thread, SIGNAL("started()"), self.j.start_joystick)
