@@ -33,7 +33,7 @@ while(True):
         else:
             pser.write((ARM_ADDRESS, '1', '\x00', '\x00')) 
     else:  # joystick controls drive system
-        '''vertical_axis=j.get_axis(1)#vertical_axis input
+        vertical_axis=j.get_axis(1)#vertical_axis input
         horizontal_axis=j.get_axis(0)# horizontal_axis input
         lever=-(j.get_axis(2)-1)/2 #the shiftable joystick in the bottom "+" and "-" to control the speed, scaled to the desired high to low position
 
@@ -55,9 +55,6 @@ while(True):
             forward_backward=93 #rest values- no motion
         if(horizontal_axis==0):
             left_right=93 #rest values- no motion
-        '''
-        forward_backward = int(j.get_axis(1) * 127 + 128)
-        left_right = int(j.get_axis(0) * 127 + 128 )
         pser.write((DRIVE_ADDRESS, chr(left_right), chr(forward_backward), '\x07'))
         
     # Switch between arm and drive system 
@@ -66,12 +63,11 @@ while(True):
         print("Switched joystick control of arm/ drive")
         # TODO: Stop all motion when switching between systems
 
-    #data = pser.read()
-    #data2 = pser.read()
-    #print("Sensor data: ", data, data2)
+    data = pser.read()
+    data2 = pser.read()
+    print("Sensor data: ", data, data2)
 
     #time.sleep(0.1)
     if time.time() - starttime > 5:
-        ser.flushInput() 
-        ser.flushOutput()
+        ser.flush() # flush the buffer every few seconds 
         starttime = time.time()
