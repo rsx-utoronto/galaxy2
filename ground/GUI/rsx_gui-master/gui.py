@@ -10,8 +10,10 @@ else:
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from collections import OrderedDict
+
 import graphs
 import sensor_simulator
+
 import random
 import serial
 from PyQt4.QtCore import *
@@ -19,170 +21,11 @@ from PyQt4.QtGui import *
 from PyKDE4.marble import *
 from math import *
 
-
-class local_graphs:
-
-    def __init__(self):
-        self.gas_sensor = graphs.scrolling_graph(200,\
-            sensor_simulator.gas_sensor)
-        self.moisture_sensor = graphs.scrolling_graph(200,\
-            sensor_simulator.moisture_sensor)
-
-
-class mpl_canvas(FigureCanvas):
-
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
-        fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = fig.add_subplot(111)
-
-        self.axes.hold(False)
-
-        FigureCanvas.__init__(self, fig)
-        self.setParent(parent)
-
-        FigureCanvas.setSizePolicy(self,
-                                   QtGui.QSizePolicy.Expanding,
-                                   QtGui.QSizePolicy.Expanding)
-        FigureCanvas.updateGeometry(self)
-
-
-class dynamic_graph_canvas(mpl_canvas):
-
-    def __init__(self, graph_x_data, line_colour='b', **kwargs):
-        mpl_canvas.__init__(self, **kwargs)
-        self.update_rate = 100
-        self.graph_x_data = graph_x_data
-        self.line_colour = line_colour
-        self.graphs_of_sensors = {'Gas Sensor':local_graphs.gas_sensor,\
-            'Moisture Sensor':local_graphs.moisture_sensor}
-        timer = QtCore.QTimer(self)
-        timer.timeout.connect(self.update_figure)
-        timer.start(self.update_rate)
-
-    def compute_initial_figure(self):
-        self.axes.plot([], [])
-
-    def graph_change_handler(self, graph_of_sensor):
-        self.graph_x_data = self.graphs_of_sensors[str(graph_of_sensor)]
-
-    def update_figure(self):
-        self.axes.plot(range(self.graph_x_data.max_len),\
-            self.graph_x_data.update(), self.line_colour)
-        self.draw()
-
-
-class rover_map(QtGui.QLabel):
-
-    def __init__(self, filename, top_left_coord, bottom_right_coord):
-        QtGui.QLabel.__init__(self)
-        self.pixmap = QtGui.QPixmap(filename)
-        self.marker = QtGui.QPixmap('triangle.png')
-        self.setPixmap(self.pixmap)
-        self.top_left_coord = top_left_coord
-        self.bottom_right_coord = bottom_right_coord
-        self.scale_factor = 1.0
-        timer = QtCore.QTimer(self)
-        timer.timeout.connect(self.update)
-        timer.start(1000)
-
-    def paintEvent(self, event):
-        rect = QtCore.QRect(QtCore.QPoint(0,0), self.size())
-        qp = QtGui.QPainter()
-        qp.begin(self)
-        qp.drawPixmap(rect, self.pixmap)
-        self.draw_rover_position(event, qp)
-        qp.end()
-        
-    def draw_rover_position(self, event, qp):
-        point = (self.get_plot_coords()[0], self.get_plot_coords()[1])
-        size = (12*self.scale_factor, 20*self.scale_factor)
-        # qp.setPen(QtCore.Qt.green)
-        # qp.drawEllipse(self.get_plot_coords()[0] - 5,\
-        #     self.get_plot_coords()[1] - 5, 10, 10)
-        # qp.drawPoint(self.get_plot_coords()[0], self.get_plot_coords()[1])
-        qp.translate(point[0], point[1])
-        qp.rotate(sensor_simulator.compass_sensor())
-        qp.drawPixmap(-size[0]/2, -size[1]/2, size[0], size[1], self.marker)
-
-    def get_plot_coords(self):
-        pos = sensor_simulator.gps_sensor()
-        size = self.size()
-
-        h = abs(self.top_left_coord[0] - self.bottom_right_coord[0])
-        w = abs(self.top_left_coord[1] - self.bottom_right_coord[1])
-
-        h_per = (abs(self.top_left_coord[0] - pos[0])/h)
-        w_per = (abs(self.top_left_coord[1] - pos[1])/w)
-
-        y = int(h_per*size.height())
-        x = int(w_per*size.width())
-
-        return x, y
-
-    def set_scale_factor(self, factor):
-        self.scale_factor = factor
-
-
-class image_viewer(QtGui.QScrollArea):
-
-    def __init__(self, image_label):
-        QtGui.QScrollArea.__init__(self)
-        self.image_label = image_label
-        self.image_label.setSizePolicy(QtGui.QSizePolicy.Ignored,\
-            QtGui.QSizePolicy.Ignored)
-        self.image_label.setScaledContents(True)
-        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.setWidget(self.image_label)
-
-        self.last_x = 0
-        self.last_y = 0
-
-        self.scale_factor = 1.0
-
-    def mouseMoveEvent(self, event):
-        if abs(self.last_x - event.x()) > 100 or abs(self.last_y - event.y()) > 100:
-            pass
-        else:
-            self.horizontalScrollBar().setValue(self.horizontalScrollBar().\
-                sliderPosition() + (self.last_x - event.x()))
-            self.verticalScrollBar().setValue(self.verticalScrollBar().\
-                sliderPosition() + (self.last_y - event.y()))
-
-        self.last_x, self.last_y = event.x(), event.y()
-
-    def wheelEvent(self, event):
-        print(event.delta())
-        self.scale_image(1 + event.delta()*0.001)
-
-    def normal_size(self):
-        self.image_label.adjustSize()
-        self.scale_factor = 1.0
-
-    def scale_image(self, factor):
-        if self.scale_factor < 3.0 and self.scale_factor > 0.666:
-            self.scale_factor *= factor
-            self.image_label.resize(self.scale_factor * self.image_label.pixmap.size())
-            self.image_label.set_scale_factor(self.scale_factor)
-
-            self.adjust_scroll_bar(self.horizontalScrollBar(), factor)
-            self.adjust_scroll_bar(self.verticalScrollBar(), factor)
-        elif self.scale_factor > 3.0 and factor <= 1:
-            self.scale_factor *= factor
-            self.image_label.resize(self.scale_factor * self.image_label.pixmap.size())
-
-            self.adjust_scroll_bar(self.horizontalScrollBar(), factor)
-            self.adjust_scroll_bar(self.verticalScrollBar(), factor)
-        elif self.scale_factor < 0.666 and factor >= 1:
-            self.scale_factor *= factor
-            self.image_label.resize(self.scale_factor * self.image_label.pixmap.size())
-
-            self.adjust_scroll_bar(self.horizontalScrollBar(), factor)
-            self.adjust_scroll_bar(self.verticalScrollBar(), factor)
-
-    def adjust_scroll_bar(self, scroll_bar, factor):
-        scroll_bar.setValue(int(factor * scroll_bar.value()
-                                + ((factor - 1) * scroll_bar.pageStep()/2)))
+import pygame 
+import serial
+import time 
+from PacketSerial import *
+import Joystick
 
 
 class rover_topview(QtGui.QLabel):
@@ -247,7 +90,7 @@ class GPSWorker(QObject):
 		#change self.pseudoiterate to self.iterate when GPS is connected
 		self.connect(self.timer, SIGNAL('timeout()'), self.pseudoiterate) #pseudoiterate is used as a test when the GPS is not connected
 		self.timer.start()
-	 
+
 	def iterate(self):
 		# update the loaction of the current worker
 		while True:
@@ -328,8 +171,8 @@ class CompassWorker(QObject):
 		angle1 = heading
 		angle2 = 3.14 + heading - 0.64
 		angle3 = 3.14 + heading + 0.64
-		print "Angles"
-		print (angle1, angle2, angle3)
+#		print "Angles"
+#		print (angle1, angle2, angle3)
 
 		#Compute the offset of the three points from the current location point
 
@@ -349,20 +192,20 @@ class CompassWorker(QObject):
 		p1LONG = px + l1x
 		p1LAT = py + l1y
 		p1 = Marble.GeoDataCoordinates(p1LONG, p1LAT, 0.0, Marble.GeoDataCoordinates.Degree)
-		print "Point 1"
-		print (p1LONG, p1LAT)
+#		print "Point 1"
+#		print (p1LONG, p1LAT)
 
 		p2LONG = px + l2x
 		p2LAT = py + l2y
 		p2 = Marble.GeoDataCoordinates(p2LONG, p2LAT, 0.0, Marble.GeoDataCoordinates.Degree)
-		print "Point 2"
-		print (p2LONG, p2LAT)
+#		print "Point 2"
+#		print (p2LONG, p2LAT)
 		
 		p3LONG = px + l3x
 		p3LAT = py + l3y
 		p3 = Marble.GeoDataCoordinates(p3LONG, p3LAT, 0.0, Marble.GeoDataCoordinates.Degree)
-		print "Point 3"
-		print (p3LONG, p3LAT)
+#		print "Point 3"
+#		print (p3LONG, p3LAT)
 
 		return (p1,p2,p3)
 			
@@ -464,6 +307,7 @@ class Window(QWidget):
 		self.H3.setCoordinate(points[2])
 		self.marble.model().treeModel().updateFeature(self.H3)
 
+
 class application_window(QtGui.QMainWindow):
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
@@ -490,19 +334,24 @@ class application_window(QtGui.QMainWindow):
         self.graph_chooser_bottom.addItems(['Gas Sensor', 'Moisture Sensor'])
 
         # Dynamic canvases to hold graphs
-        dc1 = dynamic_graph_canvas(local_graphs.gas_sensor,\
-            parent=self.graph_widget, width=5, height=4, dpi=100)
-        dc2 = dynamic_graph_canvas(local_graphs.moisture_sensor,\
-            parent=self.graph_widget, width=5, height=4, dpi=100)
+        dc1 = graphs.dynamic_graph_canvas(graphs.dynamic_graph_canvas.\
+            gas_sensor, parent=self.graph_widget, width=5, height=4, dpi=100)
+        dc2 = graphs.dynamic_graph_canvas(graphs.dynamic_graph_canvas.\
+            moisture_sensor, parent=self.graph_widget, width=5, height=4, dpi=100)
 
         # Make map widget
-        m = rover_map('map.png', (38.408270, -110.796829),\
-            (38.404115, -110.785533))
-        gps_map = image_viewer(m)
-
         UTIAS = Marble.GeoDataCoordinates(-79.466083, 43.782247, 0, Marble.GeoDataCoordinates.Degree)
         gps_map = Window(UTIAS,'UTIASTest.osm','/dev/ttyUSB0','/dev/ttyUSB1')
-    	gps_map.startRover()
+        
+        # Start joystick
+        self.joystick_thread = QThread()
+        self.j = Joystick.Joystick()
+        self.j.moveToThread(self.joystick_thread)
+
+        self.connect(self.joystick_thread, SIGNAL("started()"), self.j.start_joystick)
+        self.connect(self.joystick_thread, SIGNAL("finished()"), self.j.end_joystick)
+
+        self.joystick_thread.start()
 
         # Coloured wheels widget
         rov = rover_topview()
@@ -554,7 +403,6 @@ if __name__ == "__main__":
     qApp = QtGui.QApplication(sys.argv)
     qApp.setWindowIcon(QtGui.QIcon('icon.png'))
 
-    local_graphs = local_graphs()
     aw = application_window()
     sys.exit(qApp.exec_())
     #qApp.exec_()
