@@ -1,4 +1,4 @@
-# Test the serial port
+# Test reading from the serial port
 import serial
 import time 
 

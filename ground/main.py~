@@ -18,8 +18,10 @@ starttime = time.time()
 ARM_ADDRESS = chr(0x10)  # since pyserial likes to get them as strings. 
 SENSOR_ADDRESS = chr(0x11)
 DRIVE_ADDRESS = chr(0x12)
+SENSOR_READ_ADDRESSES = [chr(0x80), chr(0x81), chr(0x82), chr(0x83), chr(0x84), chr(0x85), ]
 
 joystick_controls_arm = False
+sensors = [0 for i in range(16)] 
 
 while(True):
     for event in pygame.event.get(): # User did something
@@ -27,13 +29,13 @@ while(True):
     
     if (joystick_controls_arm): # send joystick commands to the arm 
         if(abs(j.get_axis(1)) < 0.1): 
-            pser.write((ARM_ADDRESS, '0', '\x00', '\x00')) # don't let drift affect the arm
+            pser.write((ARM_ADDRESS, '0', '\x00', '\x00', '\x00')) # don't let drift affect the arm
         elif(j.get_axis(1) > 0):
-            pser.write((ARM_ADDRESS, '2', '\x00', '\x00'))
+            pser.write((ARM_ADDRESS, '2', '\x00', '\x00', '\x00'))
         else:
-            pser.write((ARM_ADDRESS, '1', '\x00', '\x00')) 
+            pser.write((ARM_ADDRESS, '1', '\x00', '\x00', '\x00')) 
     else:  # joystick controls drive system
-        vertical_axis=j.get_axis(1)#vertical_axis input
+        '''vertical_axis=j.get_axis(1)#vertical_axis input
         horizontal_axis=j.get_axis(0)# horizontal_axis input
         lever=-(j.get_axis(2)-1)/2 #the shiftable joystick in the bottom "+" and "-" to control the speed, scaled to the desired high to low position
 
@@ -55,19 +57,29 @@ while(True):
             forward_backward=93 #rest values- no motion
         if(horizontal_axis==0):
             left_right=93 #rest values- no motion
-        pser.write((DRIVE_ADDRESS, chr(left_right), chr(forward_backward), '\x07'))
+        '''
+        forward_backward = int(j.get_axis(1) * 127 + 128)
+        left_right = int(j.get_axis(0) * 127 + 128 )
+        pser.write((DRIVE_ADDRESS, chr(left_right), chr(forward_backward), '\x00', '\x00'))
         
     # Switch between arm and drive system 
     if j.get_button(9):
         joystick_controls_arm = not joystick_controls_arm
         print("Switched joystick control of arm/ drive")
         # TODO: Stop all motion when switching between systems
-
-    data = pser.read()
-    data2 = pser.read()
-    print("Sensor data: ", data, data2)
+    
+    # Get sensor data
+    while pser.available():
+        data = pser.read() 
+        try:
+            ind = SENSOR_READ_ADDRESSES.index(data[0]) # which sensor block is this? 
+            sensors[ind*4:ind*4+4] = data[1:5]
+        except ValueError:
+            pass # index not found
+    print(sensors)
 
     #time.sleep(0.1)
     if time.time() - starttime > 5:
-        ser.flush() # flush the buffer every few seconds 
+        ser.flushInput() 
+        ser.flushOutput()
         starttime = time.time()
