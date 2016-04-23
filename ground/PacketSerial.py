@@ -4,19 +4,20 @@ import hashlib
 
 class PacketSerial():
     """ 
-    Really hack class to write 4 serial packets at once.
+    Really hack class to write 5 serial packets at once.
     Note that the packets are not checked for order. 
-    Read and write both take 4 bits at once
+    Read and write both take 5 bits at once
+    Generally, the first byte is an address bit, the next four are useful 
     """
     def __init__(self, serial_connection):    
         self.ser = serial_connection
-        self.d = deque(["a", "a", "a", "a", "a"]) 
+        self.d = deque(["a", "a", "a", "a", "a", "a"]) 
         self.counter = 0  # used to make packets unique 
 
     def read(self):
-        "returns byte[4] or None"
+        "returns byte[5] or None"
         
-        for i in range(6):
+        for i in range(7):
             byte = self.ser.read()
             if byte is None or byte == "":
                 return None 
@@ -32,9 +33,9 @@ class PacketSerial():
                 self.d.popleft()
 
     def write(self, bytes):
-        "takes byte[4], returns None" 
-        if len(bytes) != 4:
-            raise ValueError("Array is not 4 bytes long!")
+        "takes byte[5], returns None" 
+        if len(bytes) != 5:
+            raise ValueError("Array is not 5 bytes long!")
 
         # checksum = 0
         for i in bytes:
@@ -47,3 +48,7 @@ class PacketSerial():
         self.counter = (self.counter + 1) % 256
         print("Wrote ", bytes, (self.counter - 1) % 256, checksum)
         
+    def available(self):
+        """ returns whether a packet can be read without timing out. 
+        does not guarantee that the packet will be valid """ 
+        return self.ser.inWaiting() >= 7
