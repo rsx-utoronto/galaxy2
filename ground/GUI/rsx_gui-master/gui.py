@@ -10,70 +10,29 @@ else:
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from collections import OrderedDict
+
 import graphs
 import sensor_simulator
+
 import random
 import serial
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-from PyKDE4.marble import *
+try:          # i can't figure out how to install this
+    from PyKDE4.marble import *
+    marble_imported = True
+except:
+    print "PyKDE4.marble import failed: it's probably not installed (this is "\
+    + "why the map isn't working)"
+    marble_imported = False
 from math import *
 
 import pygame 
 import serial
 import time 
 from PacketSerial import *
+import Joystick
 
-
-class local_graphs:
-
-    def __init__(self):
-        self.gas_sensor = graphs.scrolling_graph(200,\
-            sensor_simulator.gas_sensor)
-        self.moisture_sensor = graphs.scrolling_graph(200,\
-            sensor_simulator.moisture_sensor)
-
-
-class mpl_canvas(FigureCanvas):
-
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
-        fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = fig.add_subplot(111)
-
-        self.axes.hold(False)
-
-        FigureCanvas.__init__(self, fig)
-        self.setParent(parent)
-
-        FigureCanvas.setSizePolicy(self,
-                                   QtGui.QSizePolicy.Expanding,
-                                   QtGui.QSizePolicy.Expanding)
-        FigureCanvas.updateGeometry(self)
-
-
-class dynamic_graph_canvas(mpl_canvas):
-
-    def __init__(self, graph_x_data, line_colour='b', **kwargs):
-        mpl_canvas.__init__(self, **kwargs)
-        self.update_rate = 100
-        self.graph_x_data = graph_x_data
-        self.line_colour = line_colour
-        self.graphs_of_sensors = {'Gas Sensor':local_graphs.gas_sensor,\
-            'Moisture Sensor':local_graphs.moisture_sensor}
-        timer = QtCore.QTimer(self)
-        timer.timeout.connect(self.update_figure)
-        timer.start(self.update_rate)
-
-    def compute_initial_figure(self):
-        self.axes.plot([], [])
-
-    def graph_change_handler(self, graph_of_sensor):
-        self.graph_x_data = self.graphs_of_sensors[str(graph_of_sensor)]
-
-    def update_figure(self):
-        self.axes.plot(range(self.graph_x_data.max_len),\
-            self.graph_x_data.update(), self.line_colour)
-        self.draw()
 
 class rover_topview(QtGui.QLabel):
 
@@ -355,92 +314,6 @@ class Window(QWidget):
 		self.marble.model().treeModel().updateFeature(self.H3)
 
 
-class joystick(QObject):
-    #ARM_ADDRESS = chr(0x10)  # joystick.ARM_ADDRESS
-    def __init__(self):
-        QObject.__init__(self)
-        pygame.init()
-        self.j = pygame.joystick.Joystick(0)
-        self.j.init()
-        pygame.joystick.init()
-
-        self.ser = serial.Serial("/dev/ttyUSB0", 9600, timeout=1)
-        self.pser = PacketSerial(self.ser)
-        self.starttime = time.time()
-        self.update_rate = 10
-        self.timer = QTimer(self)
-
-        # Define some constants
-        self.ARM_ADDRESS = chr(0x10)  # since pyserial likes to get them as strings. 
-        self.SENSOR_ADDRESS = chr(0x11)
-        self.DRIVE_ADDRESS = chr(0x12)
-
-        self.joystick_controls_arm = False
-
-    def start_joystick(self):
-		self.timer.setInterval(0)
-		self.connect(self.timer, SIGNAL('timeout()'), self.main)
-		self.timer.start()
-
-    def end_joystick(self):
-        self.timer.stop()
-
-    def main(self):
-        for event in pygame.event.get(): # User did something
-            pass   # ignore events.
-        
-        if (self.joystick_controls_arm): # send joystick commands to the arm 
-            if(abs(self.j.get_axis(1)) < 0.1): 
-                self.pser.write((self.ARM_ADDRESS, '0', '\x00', '\x00')) # don't let drift affect the arm
-            elif(self.j.get_axis(1) > 0):
-                self.pser.write((self.ARM_ADDRESS, '2', '\x00', '\x00'))
-            else:
-                self.pser.write((self.ARM_ADDRESS, '1', '\x00', '\x00')) 
-        else:  # joystick controls drive system
-            '''vertical_axis = self.j.get_axis(1)#vertical_axis input
-            horizontal_axis = self.j.get_axis(0)# horizontal_axis input
-            lever = -(self.j.get_axis(2)-1)/2 #the shiftable joystick in the bottom "+" and "-" to control the speed, scaled to the desired high to low position
-
-            if(vertical_axis*100<0):#when the vertical axis is pushed up
-                forward_backward=93+vertical_axis*63*lever
-                forward_backward=int(forward_backward)
-            elif(vertical_axis*100>0):#when the vertical axis is pushed down
-                forward_backward=93+vertical_axis*57*lever
-                forward_backward=int(forward_backward)
-               
-            if(horizontal_axis*100<0):#when pushed left
-                left_right=93+horizontal_axis*63*lever
-                left_right=int(left_right)        
-            elif(horizontal_axis*100>0):#when pushed right
-                left_right=93+horizontal_axis*67*lever
-                left_right=int(left_right)
-               
-            if(vertical_axis==0):
-                forward_backward=93 #rest values- no motion
-            if(horizontal_axis==0):
-                left_right=93 #rest values- no motion '''
-            forward_backward = int(self.j.get_axis(1) * 100 + 100)
-            left_right = int(self.j.get_axis(2) * 100 + 100)
-            self.pser.write((self.DRIVE_ADDRESS, chr(left_right), chr(forward_backward), '\x07'))
-            self.pser.write((self.DRIVE_ADDRESS, chr(left_right), chr(forward_backward), '\x07'))
-            
-        # Switch between arm and drive system 
-        if self.j.get_button(9):
-            self.joystick_controls_arm = not self.joystick_controls_arm
-            print("Switched joystick control of arm/ drive")
-            # TODO: Stop all motion when switching between systems
-
-        #data = self.pser.read()
-        #data2 = self.pser.read()
-        #print("Sensor data: ", data, data2)
-
-        #time.sleep(0.1)
-        if time.time() - self.starttime > 5:
-            self.ser.flushInput() 
-            self.ser.flushOutput()
-            self.starttime = time.time()
-
-
 class application_window(QtGui.QMainWindow):
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
@@ -467,26 +340,28 @@ class application_window(QtGui.QMainWindow):
         self.graph_chooser_bottom.addItems(['Gas Sensor', 'Moisture Sensor'])
 
         # Dynamic canvases to hold graphs
-        dc1 = dynamic_graph_canvas(local_graphs.gas_sensor,\
-            parent=self.graph_widget, width=5, height=4, dpi=100)
-        dc2 = dynamic_graph_canvas(local_graphs.moisture_sensor,\
-            parent=self.graph_widget, width=5, height=4, dpi=100)
+        dc1 = graphs.dynamic_graph_canvas(graphs.dynamic_graph_canvas.\
+            gas_sensor, parent=self.graph_widget, width=5, height=4, dpi=100)
+        dc2 = graphs.dynamic_graph_canvas(graphs.dynamic_graph_canvas.\
+            moisture_sensor, parent=self.graph_widget, width=5, height=4, dpi=100)
 
         # Make map widget
-
-
-        UTIAS = Marble.GeoDataCoordinates(-79.466083, 43.782247, 0, Marble.GeoDataCoordinates.Degree)
-        gps_map = Window(UTIAS,'UTIASTest.osm','/dev/ttyUSB0','/dev/ttyUSB1')
+        if marble_imported:                    # see import statement at top for reason
+            UTIAS = Marble.GeoDataCoordinates(-79.466083, 43.782247, 0, Marble.GeoDataCoordinates.Degree)
+            gps_map = Window(UTIAS,'UTIASTest.osm','/dev/ttyUSB0','/dev/ttyUSB1')
         
         # Start joystick
-        self.joystick_thread = QThread()
-        self.j = joystick()
-        self.j.moveToThread(self.joystick_thread)
+        try:                      # so that it can still run without joystick connected
+            self.joystick_thread = QThread()
+            self.j = Joystick.Joystick()
+            self.j.moveToThread(self.joystick_thread)
 
-        self.connect(self.joystick_thread, SIGNAL("started()"), self.j.start_joystick)
-        self.connect(self.joystick_thread, SIGNAL("finished()"), self.j.end_joystick)
+            self.connect(self.joystick_thread, SIGNAL("started()"), self.j.start_joystick)
+            self.connect(self.joystick_thread, SIGNAL("finished()"), self.j.end_joystick)
 
-        self.joystick_thread.start()
+            self.joystick_thread.start()
+        except:
+            print "Failed to start joystick: joystick probably not plugged in"
 
         # Coloured wheels widget
         rov = rover_topview()
@@ -505,7 +380,8 @@ class application_window(QtGui.QMainWindow):
 
         # Horizontal box layout for map_widget, holds label with map image
         l2 = QtGui.QHBoxLayout()
-        l2.addWidget(gps_map)
+        if marble_imported:    # see import for reason
+            l2.addWidget(gps_map)
         self.map_widget.setLayout(l2)
 
         # Layout for topview_widget
@@ -538,7 +414,6 @@ if __name__ == "__main__":
     qApp = QtGui.QApplication(sys.argv)
     qApp.setWindowIcon(QtGui.QIcon('icon.png'))
 
-    local_graphs = local_graphs()
     aw = application_window()
     sys.exit(qApp.exec_())
     #qApp.exec_()
