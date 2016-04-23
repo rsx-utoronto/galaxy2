@@ -13,7 +13,13 @@ pser = PacketSerial(ser)
 ARM_ADDRESS = 0x10
 SENSOR_ADDRESS = 0x11
 DRIVE_ADDRESS = 0x12
-SENSOR_2_ADDRESS = 0x80 # for when we send data over serial 
+
+SENSOR_READ_ADDRESS_1 = 0x80 # for sending data over serial  
+SENSOR_READ_ADDRESS_2 = 0x81 
+SENSOR_READ_ADDRESS_3 = 0x82
+SENSOR_READ_ADDRESS_4 = 0x83
+SENSOR_READ_ADDRESS_5 = 0x84
+SENSOR_READ_ADDRESS_6 = 0x85
 
 # define places to hold the data
 drive = [-1, -1] # Holds most recent data sent to the motors. 
@@ -38,14 +44,15 @@ def read(address):
     '''    
     return bus.read_byte(address)
     
-def read_block(address):
+def read_block(address, block_length):
     ''' 
     Read a whatever block of data was sent across the i2c connection.
     Will always return a 32-byte array with 255 in the unused positions. 
     Argument: 
-        address (int): i2c address of the receiving device 
+        address (int): i2c address of the receiving device
+        block_length (int): how many bytes long the block is
     '''
-    return bus.read_i2c_block_data(address, 0)
+    return bus.read_i2c_block_data(address, 0, block_length)
 
 def write_block(address, data):
     '''
@@ -74,20 +81,23 @@ while(True):
         elif ord(data[0]) == DRIVE_ADDRESS:
             drive = [ord(i) for i in data[1:3]]
     # get sensor data
-    sensors = [read(SENSOR_ADDRESS) for i in range(5)] # is this correct or do I need to use readblock? 
-    print("Read sensors", sensors)
-    #pser.write(to_strs(SENSOR_ADDRESS, sensors[0], sensors[1], sensors[2]))
-    #pser.write(to_strs(SENSOR_2_ADDRESS, sensors[3], sensors[4], sensors[5]))
+    try:
+        sensors = read_block(SENSOR_ADDRESS, 16) # [read(SENSOR_ADDRESS) for i in range(5)] 
+    except IOError:
+        pass
+    print('sensors', sensors)
+    pser.write(to_strs(SENSOR_READ_ADDRESS_1, *sensors[0:4]))
+    pser.write(to_strs(SENSOR_READ_ADDRESS_2, *sensors[4:8]))
+    pser.write(to_strs(SENSOR_READ_ADDRESS_3, *sensors[8:12]))
+    pser.write(to_strs(SENSOR_READ_ADDRESS_4, *sensors[12:]))
     #time.sleep(0.1) # poll at a limited rate. 
 
     if time.time() - i2cwritetime > 0.3:
-        
-        if -1 not in drive: 
-            write_block(DRIVE_ADDRESS, drive)
         i2cwritetime = time.time()
         try:
             print("Wrote to drive", drive)
-            write_block(DRIVE_ADDRESS, drive) # should actually restart script
+            if -1 not in drive: 
+                write_block(DRIVE_ADDRESS, drive) # consider just restarting script here
         except IOError:
             print("IO Error. Ignoring") 
     if time.time() - flushtime > 1:
