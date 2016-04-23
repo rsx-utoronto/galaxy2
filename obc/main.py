@@ -13,14 +13,6 @@ pser = PacketSerial(ser)
 ARM_ADDRESS = 0x10
 SENSOR_ADDRESS = 0x11
 DRIVE_ADDRESS = 0x12
-
-<<<<<<< HEAD
-SENSOR_2_ADDRESS = 0xA1 # for when we send data over serial 
-
-# define places to hold the data
-sensors = [0 for i in range(6)]  # moisture, gas1, gas2, gas3, voltage
-joystick_controls_arm = False 
-=======
 SENSOR_2_ADDRESS = 0x80 # for when we send data over serial 
 
 # define places to hold the data
@@ -28,7 +20,6 @@ drive = [-1, -1] # Holds most recent data sent to the motors.
 sensors = [0 for i in range(6)]  # moisture, gas1, gas2, gas3, voltage
 joystick_controls_arm = False
 i2cwritetime = flushtime = time.time() 
->>>>>>> 331f828a2699d495068430cf6436595dc2435cf5
 
 def write(address, data):
     '''
@@ -65,30 +56,6 @@ def write_block(address, data):
     elif len(data) == 1:
             bus.write_byte(address,data[0])
     else:
-<<<<<<< HEAD
-        bus.write_i2c_block_data(address, data[0], data[1:]) 
-
-def to_strs(*lis):
-    return list(chr(i) for i in lis)
-
-while(True):
-    data = pser.read() 
-    if data is None:
-        # Do nothing. no data received. 
-        pass
-    else:    
-        data = [int(i) for i in data] # convert all data into ints
-        if data[0] == ARM_ADDRESS: #these might not be separate cases, I might just use write_block for everything
-            write(data[1])
-        elif data[1] == DRIVE_ADDRESS:
-            write_block(DRIVE_ADDRESS, data[1:2])
-
-    # get sensor data
-    #sensors = [read(SENSOR_ADDRESS) for i in range(5)] 
-    pser.write(to_strs(SENSOR_ADDRESS, sensors[0], sensors[1], sensors[2]))
-    pser.write(to_strs(SENSOR_2_ADDRESS, sensors[3], sensors[4], sensors[5]))
-    time.sleep(0.25) # poll every 0.25 seconds    
-=======
         bus.write_i2c_block_data(address, data[0], data[1:])
 
 def to_strs(*lis):
@@ -107,9 +74,10 @@ while(True):
         elif ord(data[0]) == DRIVE_ADDRESS:
             drive = [ord(i) for i in data[1:3]]
     # get sensor data
-    #sensors = [read(SENSOR_ADDRESS) for i in range(5)] 
-    pser.write(to_strs(SENSOR_ADDRESS, sensors[0], sensors[1], sensors[2]))
-    pser.write(to_strs(SENSOR_2_ADDRESS, sensors[3], sensors[4], sensors[5]))
+    sensors = [read(SENSOR_ADDRESS) for i in range(5)] # is this correct or do I need to use readblock? 
+    print("Read sensors", sensors)
+    #pser.write(to_strs(SENSOR_ADDRESS, sensors[0], sensors[1], sensors[2]))
+    #pser.write(to_strs(SENSOR_2_ADDRESS, sensors[3], sensors[4], sensors[5]))
     #time.sleep(0.1) # poll at a limited rate. 
 
     if time.time() - i2cwritetime > 0.3:
@@ -134,4 +102,3 @@ while(True):
             except IOError:
                 print("IO Error. Ignoring") 
             drive = [-1, -1] '''
->>>>>>> 331f828a2699d495068430cf6436595dc2435cf5
