@@ -45,8 +45,8 @@ void loop() {
 
 void handleRequest()
 {
-  byte sensors[] = {moisture_value, gas_1_value, gas_2_value, gas_3_value, voltage_value}; 
-  Wire.write(sensors, 5); 
+  byte sensors[] = {moisture_value, gas_1_value, gas_2_value, gas_3_value}; 
+  Wire.write(sensors, sensors.length); 
 	/*Wire.write(moisture_value); 
 	Wire.write(gas_1_value); 
 	Wire.write(gas_2_value); 
