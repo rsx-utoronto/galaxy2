@@ -18,7 +18,13 @@ import random
 import serial
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-from PyKDE4.marble import *
+try:          # i can't figure out how to install this
+    from PyKDE4.marble import *
+    marble_imported = True
+except:
+    print "PyKDE4.marble import failed: it's probably not installed (this is "\
+    + "why the map isn't working)"
+    marble_imported = False
 from math import *
 
 import pygame 
@@ -340,18 +346,22 @@ class application_window(QtGui.QMainWindow):
             moisture_sensor, parent=self.graph_widget, width=5, height=4, dpi=100)
 
         # Make map widget
-        UTIAS = Marble.GeoDataCoordinates(-79.466083, 43.782247, 0, Marble.GeoDataCoordinates.Degree)
-        gps_map = Window(UTIAS,'UTIASTest.osm','/dev/ttyUSB0','/dev/ttyUSB1')
+        if marble_imported:                    # see import statement at top for reason
+            UTIAS = Marble.GeoDataCoordinates(-79.466083, 43.782247, 0, Marble.GeoDataCoordinates.Degree)
+            gps_map = Window(UTIAS,'UTIASTest.osm','/dev/ttyUSB0','/dev/ttyUSB1')
         
         # Start joystick
-        self.joystick_thread = QThread()
-        self.j = Joystick.Joystick()
-        self.j.moveToThread(self.joystick_thread)
+        try:                      # so that it can still run without joystick connected
+            self.joystick_thread = QThread()
+            self.j = Joystick.Joystick()
+            self.j.moveToThread(self.joystick_thread)
 
-        self.connect(self.joystick_thread, SIGNAL("started()"), self.j.start_joystick)
-        self.connect(self.joystick_thread, SIGNAL("finished()"), self.j.end_joystick)
+            self.connect(self.joystick_thread, SIGNAL("started()"), self.j.start_joystick)
+            self.connect(self.joystick_thread, SIGNAL("finished()"), self.j.end_joystick)
 
-        self.joystick_thread.start()
+            self.joystick_thread.start()
+        except:
+            print "Failed to start joystick: joystick probably not plugged in"
 
         # Coloured wheels widget
         rov = rover_topview()
@@ -370,7 +380,8 @@ class application_window(QtGui.QMainWindow):
 
         # Horizontal box layout for map_widget, holds label with map image
         l2 = QtGui.QHBoxLayout()
-        l2.addWidget(gps_map)
+        if marble_imported:    # see import for reason
+            l2.addWidget(gps_map)
         self.map_widget.setLayout(l2)
 
         # Layout for topview_widget
