@@ -1,12 +1,13 @@
+import sys
+import os
+import time 
+
 import pygame 
 import serial
-import time 
-from PacketSerial import *
-import sys, os
-
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
+from PacketSerial import *
 
 class Joystick(QObject):
 

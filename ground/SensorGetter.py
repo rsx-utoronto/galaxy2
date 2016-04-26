@@ -1,3 +1,8 @@
+from PyQt4.QtCore import *
+import serial
+
+import PacketSerial
+
 class SensorGetter:
 
     def __init__(self, sensor_read_addresses, sensors, ser, pser):

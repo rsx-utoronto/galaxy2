@@ -58,7 +58,7 @@ void loop() {
             digitalWrite(cw, LOW);
         }
         else if (yPos > 0) {
-            digitalWrite(cw, yPos);
+            analogWrite(cw, yPos);
             digitalWrite(ccw, LOW);
         }
         else if (yPos == 0) {

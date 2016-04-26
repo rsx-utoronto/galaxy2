@@ -1,6 +1,7 @@
-import serial
 from collections import deque
 import hashlib 
+
+import serial
 
 class PacketSerial():
     """ 
