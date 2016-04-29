@@ -77,7 +77,7 @@ while(True):
         pass
     else:    
         if ord(data[0]) == ARM_ADDRESS: #these might not be separate cases, I might just use write_block for everything
-            write(ARM_ADDRESS, data[1])
+            write(ARM_ADDRESS, data[1:3])
         elif ord(data[0]) == DRIVE_ADDRESS:
             drive = [ord(i) for i in data[1:3]]
     # get sensor data

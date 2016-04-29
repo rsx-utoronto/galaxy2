@@ -1,8 +1,9 @@
 /* TODO:
-   - implemented receiving of data
    - check and correct assumptions
-   - implement functionality whereby the user can change which joint they're controlling
 */
+
+// for reading instructions from pi
+#include <Wire.h>
 
 // temp, I don't actually know how many joints there are
 // CW pin means HIGH on that pin, LOW on other turns motor clockwise
@@ -16,6 +17,9 @@
 // set to 1 if pins used are capable of PWM
 #define PWM_ENABLED 0
 
+// variables to store position of joystick
+int jointToControl, x, y;
+
 void setup() {
     pinMode(J_1_CW, OUTPUT);
     pinMode(J_1_CWW, OUTPUT);
@@ -25,43 +29,66 @@ void setup() {
     pinMode(J_3_CWW, OUTPUT);
 }
 
-// temp: assume data comes as [x, y, z] as position of joystick
+int receiveData(int byteCount) {
+    jointToControl = Wire.read();  // read a byte
+    x = Wire.read(); 
+    y = Wire.read();
+    byteCount -= 3;
+
+    while (byteCount >= 3) {
+    Wire.read();
+    Wire.read();
+    Wire.read();
+    byteCount -= 3;
+    }
+}
+
 // only y position (assuming forward/back on joystick) will be used to control motors
 void loop() {
-    int joystickPos[3] = receiveData() // funtion to be implemented once I know how data is sent
-    int xPos = joystickPos[0], yPos = joystickPos[1], zPos = joystickPos[2];
+    receiveData(3) // updates the joystick position variables jointToControl, x, y
 
     // which joint is currently being controlled, defaults to joint 1
-    int cw = J_1_CW, ccw = J_1_CCW;
-    // TODO: implement functionality where user presses a button on the joystick to switch joint
+    switch (jointToControl) {
+        case 1:
+            int cw = J_1_CW, ccw = J_1_CCW;
+            break;
+        case 2:
+            int cw = J_2_CW, ccw = J_2_CCW;
+            break;
+        case 3:
+            int cw = J_3_CW, ccw = J_3_CCW;
+            break;
+        default:
+            int cw = J_1_CW, ccw = J_1_CCW;
+    }
 
     // not capable of pwm, motor moves only at 1 speed regardless of angle of joystick
     if (! PWM_ENABLED) {
-        if (yPos < 0) {
+        if (y < 0) {
             digitalWrite(ccw, HIGH);     // no particular reason why I chose this combo of directions
             digitalWrite(cw, LOW);
         }
-        else if (yPos > 0) {
+        else if (y > 0) {
             digitalWrite(cw, HIGH);
             digitalWrite(ccw, LOW);
         }
-        else if (yPos == 0) {
+        else if (y == 0) {
             digitalWrite(cw, LOW);
             digitalWrite(ccw, LOW);
         }
     }
 
-    // temp: assume position is given as element of (-255, 255)
+    // i think position is given as element of (-1, 1)
     else if (PWM_ENABLED) {
-        if (yPos < 0) {
-            analogWrite(ccw, -yPos);
-            digitalWrite(cw, LOW);
+        if (y < 0) {
+            analogWrite(ccw, -y * 255);    // 255 scales given value to the argument range for
+            digitalWrite(cw, LOW);         // analogWrite (0, 255)
         }
-        else if (yPos > 0) {
-            analogWrite(cw, yPos);
+        else if (y > 0) {
+            analogWrite(cw, y * 255);
             digitalWrite(ccw, LOW);
         }
-        else if (yPos == 0) {
+        else if (y == 0) {
             digitalWrite(cw, LOW);
             digitalWrite(ccw, LOW);
         }
