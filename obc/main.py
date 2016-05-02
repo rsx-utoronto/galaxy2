@@ -78,7 +78,7 @@ while(True):
         pass
     else:    
         if ord(data[0]) == ARM_ADDRESS: #these might not be separate cases, I might just use write_block for everything
-            arm = data[1] 
+            arm = data[1:3] 
         elif ord(data[0]) == DRIVE_ADDRESS:
             drive = [ord(i) for i in data[1:3]]
     # get sensor data
@@ -105,7 +105,7 @@ while(True):
 
         try: 
         	print("Wrote to arm", arm)
-        	write(ARM_ADDRESS, data[1])
+        	write_block(ARM_ADDRESS, data[1], data[2], data[3])
         except IOError:
         	print("IO Error on Arm. Ignoring")
     if time.time() - flushtime > 1:

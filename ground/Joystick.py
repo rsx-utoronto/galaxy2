@@ -28,6 +28,7 @@ class Joystick(QObject):
         self.timer = QTimer(self)
 
         self.joystick_controls_arm = False
+        self.joint_to_control = 1
 
     def start_joystick(self):
 		self.timer.setInterval(0)
@@ -42,12 +43,16 @@ class Joystick(QObject):
             pass   # ignore events.
         
         if (self.joystick_controls_arm): # send joystick commands to the arm 
-            if(abs(self.j.get_axis(1)) < 0.1): 
+            '''if(abs(self.j.get_axis(1)) < 0.1): 
                 self.pser.write((self.arm_address, '0', '\x00', '\x00')) # don't let drift affect the arm
             elif(self.j.get_axis(1) > 0):
                 self.pser.write((self.arm_address, '2', '\x00', '\x00'))
             else:
-                self.pser.write((self.arm_address, '1', '\x00', '\x00')) 
+                self.pser.write((self.arm_address, '1', '\x00', '\x00')) '''
+            # decide what to do with arm on arduino side
+            x = int(self.j.get_axis(1))
+            y = int(self.j.get_axis(2))
+            self.pser.write((self.arm_address, chr(self.joint_to_control), chr(x), chr(y)))
         else:  # joystick controls drive system
             '''vertical_axis = self.j.get_axis(1)#vertical_axis input
             horizontal_axis = self.j.get_axis(0)# horizontal_axis input
@@ -81,6 +86,13 @@ class Joystick(QObject):
             self.joystick_controls_arm = not self.joystick_controls_arm
             print("Switched joystick control of arm/ drive")
             # TODO: Stop all motion when switching between systems
+
+        # switch between joints when controlling arm
+        if self.joystick_controls_arm = True and self.j.get_button(8): # button 8 chosen randomly, feel free to change
+            if self.joint_to_control < 3:        # currently assuming 3 joints, TODO update when number of joints known
+                self.joint_to_control += 1
+            else if self.joint_to_control == 3:
+                self.joint_to_control = 1
 
         #data = self.pser.read()
         #data2 = self.pser.read()
