@@ -23,7 +23,7 @@ SENSOR_READ_ADDRESS_6 = 0x85
 
 # define places to hold the data
 drive = [-1, -1] # Holds most recent data sent to the motors. 
-arm = '0' # holds the most recent data sent to the arm 
+arm = [-1, -1, -1] # holds the most recent data sent to the arm 
 sensors = [0 for i in range(6)]  # moisture, gas1, gas2, gas3, voltage
 joystick_controls_arm = False
 i2cwritetime = flushtime = time.time() 
@@ -105,7 +105,7 @@ while(True):
 
         try: 
         	print("Wrote to arm", arm)
-        	write_block(ARM_ADDRESS, data[1], data[2], data[3])
+        	write_block(ARM_ADDRESS, arm[1], arm[2], arm[3])
         except IOError:
         	print("IO Error on Arm. Ignoring")
     if time.time() - flushtime > 1:
