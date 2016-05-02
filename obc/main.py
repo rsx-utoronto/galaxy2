@@ -23,6 +23,7 @@ SENSOR_READ_ADDRESS_6 = 0x85
 
 # define places to hold the data
 drive = [-1, -1] # Holds most recent data sent to the motors. 
+arm = '0' # holds the most recent data sent to the arm 
 sensors = [0 for i in range(6)]  # moisture, gas1, gas2, gas3, voltage
 joystick_controls_arm = False
 i2cwritetime = flushtime = time.time() 
@@ -77,7 +78,7 @@ while(True):
         pass
     else:    
         if ord(data[0]) == ARM_ADDRESS: #these might not be separate cases, I might just use write_block for everything
-            write(ARM_ADDRESS, data[1])
+            arm = data[1] 
         elif ord(data[0]) == DRIVE_ADDRESS:
             drive = [ord(i) for i in data[1:3]]
     # get sensor data
@@ -92,14 +93,21 @@ while(True):
     pser.write(to_strs(SENSOR_READ_ADDRESS_4, *sensors[12:]))
     #time.sleep(0.1) # poll at a limited rate. 
 
-    if time.time() - i2cwritetime > 0.3:
+    if time.time() - i2cwritetime > 0.1:
         i2cwritetime = time.time()
+        # write to arm 
         try:
             print("Wrote to drive", drive)
             if -1 not in drive: 
                 write_block(DRIVE_ADDRESS, drive) # consider just restarting script here
         except IOError:
             print("IO Error. Ignoring") 
+
+        try: 
+        	print("Wrote to arm", arm)
+        	write(ARM_ADDRESS, data[1])
+        except IOError:
+        	print("IO Error on Arm. Ignoring")
     if time.time() - flushtime > 1:
         ser.flushInput() # flush the buffer at limited intervals
         ser.flushOutput() # flush the buffer at limited intervals
