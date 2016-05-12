@@ -88,10 +88,10 @@ class Joystick(QObject):
             # TODO: Stop all motion when switching between systems
 
         # switch between joints when controlling arm
-        if self.joystick_controls_arm = True and self.j.get_button(8): # button 8 chosen randomly, feel free to change
+        if self.joystick_controls_arm == True and self.j.get_button(8): # button 8 chosen randomly, feel free to change
             if self.joint_to_control < 3:        # currently assuming 3 joints, TODO update when number of joints known
                 self.joint_to_control += 1
-            else if self.joint_to_control == 3:
+            elif self.joint_to_control == 3:
                 self.joint_to_control = 1
 
         #data = self.pser.read()
@@ -103,3 +103,12 @@ class Joystick(QObject):
             self.ser.flushInput() 
             self.ser.flushOutput()
             self.starttime = time.time()
+
+    def joystick_control_arm_button(self, arg):
+        
+        self.joystick_controls_arm = arg
+        print self.joystick_controls_arm  # testing purposes only
+
+    def joint_to_control_button(self, joint):
+
+        self.joint_to_control = joint
