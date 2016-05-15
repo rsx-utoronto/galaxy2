@@ -30,6 +30,9 @@ class Joystick(QObject):
         self.joystick_controls_arm = False
         self.joint_to_control = 1
 
+        self.system_to_control_changed = pyqtSignal(bool)
+        self.joint_to_control_changed = pyqtSignal(int)
+
     def start_joystick(self):
 		self.timer.setInterval(0)
 		self.connect(self.timer, SIGNAL('timeout()'), self.main)
@@ -84,6 +87,7 @@ class Joystick(QObject):
         # Switch between arm and drive system 
         if self.j.get_button(9):
             self.joystick_controls_arm = not self.joystick_controls_arm
+            self.system_to_control_changed.emit(self.joystick_controls_arm)
             print("Switched joystick control of arm/ drive")
             # TODO: Stop all motion when switching between systems
 
@@ -93,6 +97,7 @@ class Joystick(QObject):
                 self.joint_to_control += 1
             elif self.joint_to_control == 3:
                 self.joint_to_control = 1
+            self.joint_to_control_changed.emit(self.joint_to_control)
 
         #data = self.pser.read()
         #data2 = self.pser.read()
@@ -104,7 +109,7 @@ class Joystick(QObject):
             self.ser.flushOutput()
             self.starttime = time.time()
 
-    def joystick_control_arm_button(self, arg):
+    def joystick_controls_arm_button(self, arg):
         
         self.joystick_controls_arm = arg
         print self.joystick_controls_arm  # testing purposes only
