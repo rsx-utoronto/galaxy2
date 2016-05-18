@@ -13,6 +13,10 @@ class SensorGetter:
 
         self.timer = QTimer(self)
 
+        # signal to be emitted with data when sensor data is received, will
+        # connect to an update function on the graphs, needs to be tested
+        self.data_received = pyqtSignal(list)
+
     def start_sg(self):
         self.timer.setInterval(0)
         self.connect(self.timer, SIGNAL('timeout()'), self.main)
@@ -22,13 +26,14 @@ class SensorGetter:
         self.timer.stop()
     
     def main(self):
-        while pser.available():
-            data = pser.read() 
-            if data is None:
-                break
-            try:
-                ind = SENSOR_READ_ADDRESSES.index(data[0]) # which sensor block is this? 
-                sensors[ind*4:ind*4+4] = data[1:5]
-            except ValueError:
-                pass # index not found
-        print(sensors)
+        if self.pser.available():
+            data = self.pser.read() 
+            if data is not None:
+                try:
+                    ind = self.sensor_read_addresses.index(data[0]) # which sensor block is this? 
+                    self.sensors[ind*4:ind*4+4] = data[1:5]
+                except ValueError:
+                    pass # index not found
+
+        # emit signal containing sensor data
+        self.data_received.emit(self.sensors)

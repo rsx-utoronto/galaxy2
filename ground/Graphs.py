@@ -13,6 +13,9 @@ from PyQt4.QtCore import *
 # included in github repo
 import SensorSimulator   # for testing purposes only
 
+# For testing when no real data coming in
+TEST_DATA_ENABLED = True
+
 class ScrollingGraph:
 
     ''' controls the buffer and updating of the scrolling
@@ -28,21 +31,32 @@ class ScrollingGraph:
         # data_fn is currently a function that produces random data
 
 
-    def add_to_buffer(self, buf, val):
+    def add_to_buffer(self, data):
         # adds value to buffer; if buffer is full, removes last value
-        if len(buf) < self.max_len:
-            buf.appendleft(val)
+        if TEST_DATA_ENABLED:
+            if len(self.ax) < self.max_len:
+                self.ax.appendleft(data)
+            else:
+                self.ax.pop()
+                self.ax.appendleft(data)
         else:
-            buf.pop()
-            buf.appendleft(val)
+            for val in data:
+                if len(self.ax) < self.max_len:
+                    self.ax.appendleft(val)
+                else:
+                    self.ax.pop()
+                    self.ax.appendleft(val)
 
-
-    def update(self):
+    def update(self, data):
         # gets new data from data function, adds it to the buffer
-        data = self.data_fn()
-        self.add_to_buffer(self.ax, data)
+        # data is 4 element array of newest data, passed from main.py
+        if TEST_DATA_ENABLED:
+            data = self.data_fn()
+            self.add_to_buffer(data)
 
-        return self.ax
+            return self.ax
+        else:
+            self.add_to_buffer(data)
 
 
 class MPLCanvas(FigureCanvas):
@@ -111,6 +125,13 @@ class DynamicGraphCanvas(MPLCanvas):
         # called when timer runs out, calls update function of the
         # ScrollingGraph object being used as the data source,
         # redraws the graph
-        self.axes.plot(range(self.graph_x_data.max_len),\
-            self.graph_x_data.update(), self.line_colour)
-        self.draw()
+        # No longer used if data coming in, graphs should update automatically
+        # when new data comes in
+        if TEST_DATA_ENABLED:
+            self.axes.plot(range(self.graph_x_data.max_len),\
+                self.graph_x_data.update([]), self.line_colour)
+            self.draw()
+        else:
+            self.axes.plot(range(self.graph_x_data.max_len),\
+                self.graph_x_data.ax, self.line_colour)
+            self.draw()

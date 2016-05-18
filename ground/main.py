@@ -35,7 +35,7 @@ import DebugConsole
 ARM_ADDRESS = chr(0x10)  # since pyserial likes to get them as strings. 
 SENSOR_ADDRESS = chr(0x11)  # doesn't seem to be used anywhere, do we still need this?
 DRIVE_ADDRESS = chr(0x12)
-SENSOR_READ_ADDRESSES = [chr(0x80), chr(0x81), chr(0x82), chr(0x83), chr(0x84), chr(0x85), ]
+SENSOR_READ_ADDRESSES = [chr(0x80), chr(0x81), chr(0x82), chr(0x83), chr(0x84), chr(0x85)] # should there only be 4 addresses here?
 SENSORS = [0 for i in range(16)] 
 
 try:
@@ -76,6 +76,10 @@ class application_window(QMainWindow):
         # dictionary for easy access by name
         dict_of_graphs = {'Gas Sensor':gas_sensor,\
         'Moisture Sensor':moisture_sensor}
+        # List of the sensor graph objects created above. They *must* be in the
+        # same order as their read addresses (e.g. the sensor with read address
+        # 0x80 must come before the sensor with read address 0x81).
+        list_of_sensors = [gas_sensor, moisture_sensor]
 
         # Dynamic canvases to hold graphs
         dc1 = Graphs.DynamicGraphCanvas(\
@@ -126,6 +130,8 @@ class application_window(QMainWindow):
 
             self.connect(self.sensor_getter_thread, SIGNAL("started()"), self.j.start_sg)
             self.connect(self.sensor_getter_thread, SIGNAL("finished()"), self.j.end_sg)
+
+            self.sg.data_received.connect(self.update_sensor_graphs)
 
             self.sensor_getter_thread.start()
         except:
@@ -253,7 +259,12 @@ class application_window(QMainWindow):
         elif not joystick_controls_arm:
             self.control_drive_button.setChecked(False)
 
+    def update_sensor_graphs(self, data):
+        for i in range(0, 15, 4):
+            list_of_sensors[i/4].update(data[i:i+4])
+
     def joint_to_control_changed(self, joint):
+        # No idea if this will work. If not, just use if statements.
         exec('self.joint_%d_button.setChecked(True)' % joint)
 
     def fileQuit(self):
